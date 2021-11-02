@@ -54,10 +54,12 @@ namespace TabPlayer
 		{
 			note = note.ToUpper();
 
-			if (note.Length == 2 && note[1] == 'B')
+			if (note.Length == 2)
 			{
-				var index = Array.IndexOf(Notes, note[0].ToString()) - 1;
-				var value = index % Notes.Length;
+				var off = note[1] == 'B' ? -1 : (note[1] == '#' ? 1 : 0);
+
+				var index = Array.IndexOf(Notes, note[0].ToString()) + off;
+				var value = index < 0 ? Notes.Length - Math.Abs(index) % Notes.Length : index % Notes.Length;
 
 				return new Note
 				{

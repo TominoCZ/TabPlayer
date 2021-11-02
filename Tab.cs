@@ -115,7 +115,7 @@ namespace TabPlayer
 
 							if (strIndex < RingingStrings.Length)
 							{
-								BassManager.Stop(RingingStrings[strIndex]);
+								BassManager.Mute(RingingStrings[strIndex]);
 
 								RingingStrings[strIndex] = s;
 							}
@@ -124,7 +124,7 @@ namespace TabPlayer
 						{
 							if (strIndex < RingingStrings.Length)
 							{
-								BassManager.Stop(RingingStrings[strIndex]);
+								BassManager.Mute(RingingStrings[strIndex]);
 							}
 						}
 					}
@@ -171,7 +171,6 @@ namespace TabPlayer
 			var tuning = new List<Note>();
 
 			List<string> tab = new List<string>();
-			//List<byte>[] tab;
 
 			for (int i = 0; i < lines.Length; i++)
 			{
@@ -185,7 +184,7 @@ namespace TabPlayer
 
 					var note = standardTuning[Math.Min(standardTuning.Length - 1, stringIndex)];
 
-					if (firstPipe > -1)
+					if (firstPipe > -1 && firstPipe <= 2)
 					{
 						if (firstPipe > 0)
 						{

@@ -38,6 +38,11 @@ namespace TabPlayer
 			Bass.BASS_StreamFree(stream);
 		}
 
+		public static void Mute(int stream)
+		{
+			Bass.BASS_ChannelSetAttribute(stream, BASSAttribute.BASS_ATTRIB_VOL, 0);
+		}
+
 		public static void Reload()
 		{
 			Dispose();
