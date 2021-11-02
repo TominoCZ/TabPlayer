@@ -45,7 +45,7 @@ namespace TabPlayer
 
 		public string Letter => Notes[Value] + Octave;
 
-		public int Play(float volume = 1)
+		public int Play(float volume = 0.25f)
 		{
 			return Form1.SoundPlayer.Play(Letter, volume);
 		}

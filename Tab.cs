@@ -14,18 +14,27 @@ namespace TabPlayer
 		public int Index;
 		public int Length;
 		public bool Playing;
+		public bool Paused;
 		public bool Repeat;
 
 		public void Play()
 		{
 			Time = 0;
 			Index = 0;
-			Playing = true;
+
+			Resume();
 		}
 
 		public void Pause()
 		{
 			Playing = false;
+			Paused = true;
+		}
+
+		public void Resume()
+		{
+			Playing = true;
+			Paused = false;
 		}
 
 		public void Stop()
@@ -33,6 +42,7 @@ namespace TabPlayer
 			Time = 0;
 			Index = 0;
 			Playing = false;
+			Paused = false;
 		}
 
 		private int[] GetNotes(int index)
@@ -82,39 +92,48 @@ namespace TabPlayer
 
 		public void Update(double delta)
 		{
-			if (Playing)
+			if (Playing && delta >= 0)
 			{
 				Time += delta * 10;
 			}
 
 			var newIndex = (int)Math.Min(Length, Math.Floor(Time + 0.5));
 
-			for (int i = Index; i < newIndex; i++)
+			if (delta >= 0)
 			{
-				var notes = GetNotes(i);
-
-				for (int strIndex = 0; strIndex < notes.Length; strIndex++)
+				for (int i = Index; i < newIndex; i++)
 				{
-					var offset = notes[strIndex];
-					if (offset > -1)
-					{
-						var note = Tuning[strIndex] + offset;
-						var s = note.Play();
+					var notes = GetNotes(i);
 
-						BassManager.Stop(RingingStrings[strIndex]);
-
-						RingingStrings[strIndex] = s;
-					}
-					else if (offset == -2)
+					for (int strIndex = 0; strIndex < notes.Length; strIndex++)
 					{
-						BassManager.Stop(RingingStrings[strIndex]);
+						var offset = notes[strIndex];
+						if (offset > -1)
+						{
+							var note = Tuning[strIndex] + offset;
+							var s = note.Play();
+
+							if (strIndex < RingingStrings.Length)
+							{
+								BassManager.Stop(RingingStrings[strIndex]);
+
+								RingingStrings[strIndex] = s;
+							}
+						}
+						else if (offset == -2)
+						{
+							if (strIndex < RingingStrings.Length)
+							{
+								BassManager.Stop(RingingStrings[strIndex]);
+							}
+						}
 					}
 				}
 			}
 
 			var over = Time - Length;
 
-			if (over >= 0)
+			if (over >= 0 && Playing)
 			{
 				if (Repeat)
 				{
