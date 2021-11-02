@@ -87,7 +87,7 @@ namespace TabPlayer
 				Time += delta * 10;
 			}
 
-			var newIndex = (int)Math.Min(Length, Math.Floor(Time));
+			var newIndex = (int)Math.Min(Length, Math.Floor(Time + 0.5));
 
 			for (int i = Index; i < newIndex; i++)
 			{
@@ -214,7 +214,10 @@ namespace TabPlayer
 								  //line = line.Replace("-|", "-");
 								  //line = line.Replace("|-", "-");
 				line = line.Replace("|", "");
+				//line = "|-" + line + "-|";
+
 				tab[i] = line;
+
 				ringing[i] = -1;
 
 				length = Math.Max(length, line.Length);

@@ -64,11 +64,15 @@ namespace TabPlayer
 
 				btnPlay.Text = _tab.Playing ? "STOP" : "PLAY";
 			}
+			
+			var scale = lblTab.Font.Size / 16.80556;
+			var offset = 5 * scale;
 
-			lblTab.Location = new Point((int)(pTab.Size.Width / 2f - progress * lblTab.Size.Width), 0);
+			lblTab.Location = new Point((int)(pTab.Size.Width / 2.0 - progress * (lblTab.Size.Width - offset * 2)), 0);
 
 			pCenter.Size = new Size((int)1, pTab.Size.Height);
 			pCenter.Location = new Point((int)(pTab.Size.Width / 2f - pCenter.Size.Width / 2f), 0);
+
 			lblTab.Invalidate();
 			pCenter.Invalidate();
 		}
