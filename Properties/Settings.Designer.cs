@@ -37,13 +37,61 @@ namespace TabPlayer.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool PauseOnEdit {
             get {
                 return ((bool)(this["PauseOnEdit"]));
             }
             set {
                 this["PauseOnEdit"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute(@"E |--0-------0---------------0---------------0---------------------|
+B |--0---------0-------------0-----------------0-------------------|
+G#|--1-----------1---1---3---0-------0-----------0-------0---------|
+C#|--0-----0-------------------------0-----------------3-----3-----|
+A |--0-----0-------0-----------------x---------------2-----------0-|
+E |--0-----0---------------------0---4-----4-------2---------------|
+
+|--0-------0---------------0---------------0---------------------|
+|--0---------0-------------0-----------------0-------------------|
+|--1-----------1---5---3---0-------0-----------0-------0---------|
+|--0-----0-------------------------0-----------------10----10----|
+|--0-----0-------0-----------------x---------------9-----------0-|
+|--0-----0---------------------0---4---7-7-------7---------------|")]
+        public string Tab {
+            get {
+                return ((string)(this["Tab"]));
+            }
+            set {
+                this["Tab"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("494, 448")]
+        public global::System.Drawing.Size Size {
+            get {
+                return ((global::System.Drawing.Size)(this["Size"]));
+            }
+            set {
+                this["Size"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int Speed {
+            get {
+                return ((int)(this["Speed"]));
+            }
+            set {
+                this["Speed"] = value;
             }
         }
     }

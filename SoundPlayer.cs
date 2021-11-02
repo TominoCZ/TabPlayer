@@ -33,7 +33,7 @@ namespace TabPlayer
 
 				Bass.BASS_ChannelPlay(fxs, false);
 
-				return s;
+				return fxs;
 			}
 
 			return -1;

@@ -115,7 +115,7 @@ namespace TabPlayer
 
 							if (strIndex < RingingStrings.Length)
 							{
-								BassManager.Stop(RingingStrings[strIndex]);
+								BassManager.Mute(RingingStrings[strIndex]);
 
 								RingingStrings[strIndex] = s;
 							}
@@ -124,7 +124,7 @@ namespace TabPlayer
 						{
 							if (strIndex < RingingStrings.Length)
 							{
-								BassManager.Stop(RingingStrings[strIndex]);
+								BassManager.Mute(RingingStrings[strIndex]);
 							}
 						}
 					}

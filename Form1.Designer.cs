@@ -94,13 +94,14 @@ namespace TabPlayer
 			this.tbarSpeed.Maximum = 200;
 			this.tbarSpeed.Minimum = 25;
 			this.tbarSpeed.Name = "tbarSpeed";
-			this.tbarSpeed.Size = new System.Drawing.Size(299, 33);
+			this.tbarSpeed.Size = new System.Drawing.Size(293, 33);
 			this.tbarSpeed.SmallChange = 0;
 			this.tbarSpeed.TabIndex = 2;
 			this.tbarSpeed.TickFrequency = 0;
 			this.tbarSpeed.TickStyle = System.Windows.Forms.TickStyle.Both;
 			this.tbarSpeed.Value = 100;
-			this.tbarSpeed.Scroll += new System.EventHandler(this.tbarSpeed_Scroll);
+			this.tbarSpeed.Scroll += new System.EventHandler(this.tbarSpeed_ValueChanged);
+			this.tbarSpeed.ValueChanged += new System.EventHandler(this.tbarSpeed_ValueChanged);
 			this.tbarSpeed.MouseUp += new System.Windows.Forms.MouseEventHandler(this.tbarSpeed_MouseUp);
 			// 
 			// lblTab
@@ -144,7 +145,7 @@ namespace TabPlayer
 			// 
 			// chbRepeat
 			// 
-			this.chbRepeat.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+			this.chbRepeat.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
 			this.chbRepeat.AutoSize = true;
 			this.chbRepeat.Checked = true;
 			this.chbRepeat.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -167,7 +168,8 @@ namespace TabPlayer
 			// 
 			// lblSpeed
 			// 
-			this.lblSpeed.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+			this.lblSpeed.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.lblSpeed.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
 			this.lblSpeed.ForeColor = System.Drawing.SystemColors.Control;
 			this.lblSpeed.Location = new System.Drawing.Point(191, 330);
@@ -222,8 +224,10 @@ namespace TabPlayer
 			// 
 			// chbPauseOnEdit
 			// 
-			this.chbPauseOnEdit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+			this.chbPauseOnEdit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
 			this.chbPauseOnEdit.AutoSize = true;
+			this.chbPauseOnEdit.Checked = true;
+			this.chbPauseOnEdit.CheckState = System.Windows.Forms.CheckState.Checked;
 			this.chbPauseOnEdit.FlatAppearance.BorderSize = 0;
 			this.chbPauseOnEdit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
 			this.chbPauseOnEdit.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
@@ -240,6 +244,7 @@ namespace TabPlayer
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+			this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
 			this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
 			this.ClientSize = new System.Drawing.Size(478, 409);
 			this.Controls.Add(this.pContainer);
@@ -252,9 +257,11 @@ namespace TabPlayer
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MinimumSize = new System.Drawing.Size(494, 448);
 			this.Name = "Form1";
-			this.Text = "Tab Player v1.1 [Made by TominoCZ]";
+			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+			this.Text = "Tab Player v1.2 [Made by TominoCZ]";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
 			this.Load += new System.EventHandler(this.Form1_Load);
+			this.ResizeEnd += new System.EventHandler(this.Form1_ResizeEnd);
 			this.Click += new System.EventHandler(this.LoseTextBoxFocus);
 			this.MouseClick += new System.Windows.Forms.MouseEventHandler(this.LoseTextBoxFocus);
 			this.Resize += new System.EventHandler(this.Form1_Resize);

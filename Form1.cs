@@ -29,6 +29,8 @@ namespace TabPlayer
 		private bool _spaceDown;
 		private bool _mouseDown;
 
+		private bool _loaded = false;
+
 		public Form1()
 		{
 			InitializeComponent();
@@ -42,10 +44,17 @@ namespace TabPlayer
 
 			Application.Idle += (o, _) => Tick();
 
+			Size = Settings.Default.Size;
+
+			rtbTab.Text = Settings.Default.Tab;
+
 			SetTab();
 
 			chbRepeat.Checked = Settings.Default.Repeat;
 			chbPauseOnEdit.Checked = Settings.Default.PauseOnEdit;
+			tbarSpeed.Value = Math.Max(tbarSpeed.Minimum, Math.Min(tbarSpeed.Maximum, Settings.Default.Speed));
+
+			_loaded = true;
 		}
 
 		private void Tick()
@@ -69,7 +78,14 @@ namespace TabPlayer
 			if (delta < 0)
 				return;
 
-			if (Keyboard.IsKeyDown(Key.Space) && !btnPlayPause.Focused && ActiveControl != rtbTab && ContainsFocus)
+			var captureInput = _tab != null && !btnPlayPause.Focused && ActiveControl != rtbTab && ContainsFocus;
+			
+			if (captureInput && (Keyboard.IsKeyDown(Key.R) || Keyboard.IsKeyDown(Key.S)))
+			{
+				_tab.Stop();
+			}
+
+			if (captureInput && Keyboard.IsKeyDown(Key.Space))
 			{
 				if (!_spaceDown)
 				{
@@ -126,6 +142,7 @@ namespace TabPlayer
 		private void SetTab()
 		{
 			var tab = Tab.Parse(rtbTab.Text.Split('\n'));
+
 			tab.RingingStrings = _tab?.RingingStrings ?? tab.RingingStrings;
 			tab.Index = _tab?.Index ?? tab.Index;
 			tab.Time = _tab?.Time ?? tab.Time;
@@ -136,12 +153,14 @@ namespace TabPlayer
 			if (chbPauseOnEdit.Checked)
 				tab.Pause();
 
-			lblTab.Text = string.Join("\n", tab.Data);
+			var content = string.Join("\n", tab.Data).Trim();
 
-			if (lblTab.Text.Trim().Length < 3)
+			if (content.Length == 0)
 			{
 				return;
 			}
+
+			lblTab.Text = content;
 
 			var height = pTab.Size.Height;
 			var line = height / (float)tab.Data.Length / 1.2f;
@@ -167,8 +186,14 @@ namespace TabPlayer
 
 		private void SaveSettings()
 		{
+			if (!_loaded)
+				return;
+
+			Settings.Default.Tab = rtbTab.Text;
 			Settings.Default.Repeat = chbRepeat.Checked;
 			Settings.Default.PauseOnEdit = chbPauseOnEdit.Checked;
+			Settings.Default.Speed = tbarSpeed.Value;
+			Settings.Default.Size = Size;
 
 			Settings.Default.Save();
 		}
@@ -176,6 +201,8 @@ namespace TabPlayer
 		private void rtbTab_TextChanged(object sender, EventArgs e)
 		{
 			SetTab();
+
+			SaveSettings();
 		}
 
 		private void chbRepeat_CheckedChanged(object sender, EventArgs e)
@@ -195,9 +222,11 @@ namespace TabPlayer
 			SaveSettings();
 		}
 
-		private void tbarSpeed_Scroll(object sender, EventArgs e)
+		private void tbarSpeed_ValueChanged(object sender, EventArgs e)
 		{
-			lblSpeed.Text = $"Speed: {(int)tbarSpeed.Value}%";
+			lblSpeed.Text = $"Speed: {tbarSpeed.Value}%";
+
+			SaveSettings();
 		}
 
 		private void lblTab_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -260,6 +289,11 @@ namespace TabPlayer
 		private void Form1_Resize(object sender, EventArgs e)
 		{
 			Update();
+		}
+
+		private void Form1_ResizeEnd(object sender, EventArgs e)
+		{
+			SaveSettings();
 		}
 
 		private void Form1_FormClosing(object sender, FormClosingEventArgs e)
