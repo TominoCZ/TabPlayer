@@ -44,6 +44,7 @@ namespace TabPlayer
 			this.pContainer = new System.Windows.Forms.Panel();
 			this.pProgress = new System.Windows.Forms.Panel();
 			this.chbPauseOnEdit = new System.Windows.Forms.CheckBox();
+			this.cbInstrument = new System.Windows.Forms.ComboBox();
 			((System.ComponentModel.ISupportInitialize)(this.tbarSpeed)).BeginInit();
 			this.pTab.SuspendLayout();
 			this.pContainer.SuspendLayout();
@@ -241,6 +242,22 @@ namespace TabPlayer
 			this.chbPauseOnEdit.UseVisualStyleBackColor = true;
 			this.chbPauseOnEdit.CheckedChanged += new System.EventHandler(this.chbPauseOnEdit_CheckedChanged);
 			// 
+			// cbInstrument
+			// 
+			this.cbInstrument.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+			this.cbInstrument.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
+			this.cbInstrument.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+			this.cbInstrument.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+			this.cbInstrument.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.cbInstrument.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.cbInstrument.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+			this.cbInstrument.ForeColor = System.Drawing.SystemColors.Control;
+			this.cbInstrument.Location = new System.Drawing.Point(361, 378);
+			this.cbInstrument.Name = "cbInstrument";
+			this.cbInstrument.Size = new System.Drawing.Size(110, 23);
+			this.cbInstrument.TabIndex = 11;
+			this.cbInstrument.SelectedIndexChanged += new System.EventHandler(this.cbInstrument_SelectedIndexChanged);
+			// 
 			// Form1
 			// 
 			this.AllowDrop = true;
@@ -249,6 +266,7 @@ namespace TabPlayer
 			this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
 			this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
 			this.ClientSize = new System.Drawing.Size(478, 409);
+			this.Controls.Add(this.cbInstrument);
 			this.Controls.Add(this.pContainer);
 			this.Controls.Add(this.chbPauseOnEdit);
 			this.Controls.Add(this.btnStop);
@@ -290,6 +308,7 @@ namespace TabPlayer
 		private System.Windows.Forms.Panel pContainer;
 		private System.Windows.Forms.Panel pProgress;
 		private System.Windows.Forms.CheckBox chbPauseOnEdit;
+		private System.Windows.Forms.ComboBox cbInstrument;
 	}
 }
 

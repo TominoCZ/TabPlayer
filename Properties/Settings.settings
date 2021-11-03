@@ -32,5 +32,8 @@ E |--0-----0---------------------0---4-----4-------2---------------|
     <Setting Name="Time" Type="System.Double" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
+    <Setting Name="Instrument" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

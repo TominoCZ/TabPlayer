@@ -6,6 +6,34 @@ namespace TabPlayer
 {
 	public class Tab
 	{
+		public static Dictionary<Instrument, Note[]> _standardTuning = new Dictionary<Instrument, Note[]>()
+		{
+			{
+				Instrument.Guitar,
+				new[]
+				{
+					Note.Parse("E", 4),
+					Note.Parse("B", 3),
+					Note.Parse("G", 3),
+					Note.Parse("D", 3),
+					Note.Parse("A", 2),
+					Note.Parse("E", 2)
+				}
+			},
+			{
+				Instrument.Bass,
+				new[]
+				{
+					Note.Parse("G", 2),
+					Note.Parse("D", 2),
+					Note.Parse("A", 1),
+					Note.Parse("E", 1)
+				}
+			}
+		};
+
+		public Instrument Instrument;
+
 		public string[] Data;
 		public Note[] Tuning;
 		public int[] RingingStrings;
@@ -94,7 +122,7 @@ namespace TabPlayer
 		{
 			if (Playing && delta >= 0)
 			{
-				Time += delta * 10;
+				Time += delta;
 			}
 
 			var newIndex = (int)Math.Min(Length, Math.Floor(Time + 0.5));
@@ -111,13 +139,15 @@ namespace TabPlayer
 						if (offset > -1)
 						{
 							var note = Tuning[strIndex] + offset;
-							var s = note.Play();
+
+							var stream = Form1.Instance.NoteManager.Play(ref note, Instrument);
+							//var s = note.Play();
 
 							if (strIndex < RingingStrings.Length)
 							{
 								BassManager.Mute(RingingStrings[strIndex]);
 
-								RingingStrings[strIndex] = s;
+								RingingStrings[strIndex] = stream;
 							}
 						}
 						else if (offset == -2)
@@ -153,21 +183,14 @@ namespace TabPlayer
 			Index = newIndex;
 		}
 
-		public static Tab Parse(string[] lines)
+		public static Tab Parse(string[] lines, Instrument instrument)
 		{
 			var started = false;
 			var stringsSet = false;
 			var strings = 0;
 			var stringIndex = 0;
 
-			var standardTuning = new[] {
-				Note.FromNote("E", 4),
-				Note.FromNote("B", 3),
-				Note.FromNote("G", 3),
-				Note.FromNote("D", 3),
-				Note.FromNote("A", 2),
-				Note.FromNote("E", 2)
-			};
+			var standardTuning = _standardTuning[instrument];
 			var tuning = new List<Note>();
 
 			List<string> tab = new List<string>();
@@ -188,7 +211,7 @@ namespace TabPlayer
 					{
 						if (firstPipe > 0)
 						{
-							note = Note.FromNote(line.Substring(0, firstPipe), standardTuning[Math.Min(standardTuning.Length - 1, stringIndex)].Octave);
+							note = Note.Parse(line.Substring(0, firstPipe), standardTuning[Math.Min(standardTuning.Length - 1, stringIndex)].Octave);
 						}
 
 						line = line.Substring(firstPipe + 1, line.Length - firstPipe - 1);
@@ -246,7 +269,8 @@ namespace TabPlayer
 				Data = tab.ToArray(),
 				Tuning = tuning.ToArray(),
 				RingingStrings = ringing,
-				Length = length
+				Length = length,
+				Instrument = instrument
 			};
 		}
 	}

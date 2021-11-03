@@ -14,9 +14,28 @@ using TabPlayer.Properties;
 
 namespace TabPlayer
 {
+	public enum Instrument
+	{
+		Guitar,
+		Bass
+	}
+	/*
+	public class Instrument
+	{
+		public string ID;
+		public string[] Tuning;
+	}
+
+	public class JSONInstruments
+	{
+
+	}*/
+
 	public partial class Form1 : Form
 	{
-		public static SoundPlayer SoundPlayer = new SoundPlayer();
+		public static Form1 Instance;
+
+		public NoteManager NoteManager;
 
 		private Tab _tab = null;
 		private DateTime _last = DateTime.MinValue;
@@ -26,6 +45,8 @@ namespace TabPlayer
 		private double _tabOffset = 0;
 		private double _tabWidth = 100;
 
+		private int _dashPerSecond = 10;
+
 		private bool _spaceDown;
 		private bool _mouseDown;
 
@@ -33,6 +54,11 @@ namespace TabPlayer
 
 		public Form1()
 		{
+			BassManager.Reload();
+
+			Instance = this;
+			NoteManager = new NoteManager();
+
 			InitializeComponent();
 		}
 
@@ -40,13 +66,23 @@ namespace TabPlayer
 		{
 			Settings.Default.Reload();
 
-			BassManager.Reload();
-
 			Application.Idle += (o, _) => Tick();
 
-			Size = Settings.Default.Size;
+			var items = (Instrument[])Enum.GetValues(typeof(Instrument));
+			foreach (var item in items)
+			{
+				cbInstrument.Items.Add(item);
+			}
+
+			var ins = Settings.Default.Instrument;
+			if (ins < 0 || ins >= cbInstrument.Items.Count)
+				ins = 0;
+
+			cbInstrument.SelectedIndex = ins;
 
 			rtbTab.Text = Settings.Default.Tab;
+
+			Size = Settings.Default.Size;
 
 			SetTab();
 
@@ -75,8 +111,8 @@ namespace TabPlayer
 			}
 
 			_last = now;
-			
-			Update(delta * tbarSpeed.Value / 100);
+
+			Update(delta * _dashPerSecond * tbarSpeed.Value / 100);
 		}
 
 		private void Update(double delta = 0)
@@ -85,7 +121,7 @@ namespace TabPlayer
 				return;
 
 			var captureInput = _tab != null && !btnPlayPause.Focused && ActiveControl != rtbTab && ContainsFocus;
-			
+
 			if (captureInput && (Keyboard.IsKeyDown(Key.R) || Keyboard.IsKeyDown(Key.S)))
 			{
 				_tab.Stop();
@@ -145,9 +181,9 @@ namespace TabPlayer
 			pCenter.Invalidate();
 		}
 
-		private void SetTab()
+		private Tab SetTab()
 		{
-			var tab = Tab.Parse(rtbTab.Text.Split('\n'));
+			var tab = Tab.Parse(rtbTab.Text.Split('\n'), (Instrument)cbInstrument.Items[cbInstrument.SelectedIndex]);
 
 			tab.RingingStrings = _tab?.RingingStrings ?? tab.RingingStrings;
 			tab.Index = _tab?.Index ?? tab.Index;
@@ -156,14 +192,11 @@ namespace TabPlayer
 			tab.Paused = _tab?.Paused ?? tab.Paused;
 			tab.Repeat = chbRepeat.Checked;
 
-			if (chbPauseOnEdit.Checked)
-				tab.Pause();
-
 			var content = string.Join("\n", tab.Data).Trim();
 
 			if (content.Length == 0)
 			{
-				return;
+				return null;
 			}
 
 			lblTab.Text = content;
@@ -192,6 +225,8 @@ namespace TabPlayer
 			Settings.Default.Tab = rtbTab.Text;
 
 			SaveSettings();
+
+			return tab;
 		}
 
 		private void SaveSettings()
@@ -205,12 +240,20 @@ namespace TabPlayer
 			Settings.Default.Speed = tbarSpeed.Value;
 			Settings.Default.Size = Size;
 
+			Settings.Default.Instrument = cbInstrument.SelectedIndex;
+
 			Settings.Default.Save();
 		}
 
 		private void rtbTab_TextChanged(object sender, EventArgs e)
 		{
-			SetTab();
+			var tab = SetTab();
+
+			if (tab != null)
+			{
+				if (chbPauseOnEdit.Checked)
+					tab.Pause();
+			}
 
 			SaveSettings();
 		}
@@ -234,7 +277,19 @@ namespace TabPlayer
 
 		private void tbarSpeed_ValueChanged(object sender, EventArgs e)
 		{
-			lblSpeed.Text = $"Speed: {tbarSpeed.Value}%";
+			var dps = _dashPerSecond * tbarSpeed.Value / 100.0;
+
+			lblSpeed.Text = $"Speed: {tbarSpeed.Value}% ({dps:F1} dashes/s)";
+
+			SaveSettings();
+		}
+
+		private void cbInstrument_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (_loaded)
+			{
+				SetTab();
+			}
 
 			SaveSettings();
 		}
@@ -313,6 +368,7 @@ namespace TabPlayer
 
 		private void Form1_FormClosing(object sender, FormClosingEventArgs e)
 		{
+			NoteManager.Dispose();
 			BassManager.Dispose();
 
 			SaveSettings();

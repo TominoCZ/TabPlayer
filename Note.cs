@@ -10,26 +10,21 @@ namespace TabPlayer
 			var newVal = n.Value + offset;
 			var octaves = (int)Math.Floor(newVal / 12.0);
 
+			var value = newVal % 12;
+			var octave = n.Octave + octaves;
+			var note = Notes[value];
+
 			return new Note
 			{
-				Value = newVal % 12,
-				Octave = n.Octave + octaves
+				Value = value,
+				Octave = octave,
+				Letter = $"{note}{octave}"
 			};
 		}
 
 		public static Note operator -(Note n, int offset)
 		{
 			return n + -offset;
-		}
-
-		public static bool operator >(Note n1, Note n2)
-		{
-			return n1.Octave > n2.Octave || n1.Octave == n2.Octave && n1.Value > n2.Value;
-		}
-
-		public static bool operator <(Note n1, Note n2)
-		{
-			return n1.Octave < n2.Octave || n1.Octave == n2.Octave && n1.Value < n2.Value;
 		}
 
 		public static string[] Notes = new[]
@@ -43,14 +38,14 @@ namespace TabPlayer
 		public int Value;
 		public int Octave;
 
-		public string Letter => Notes[Value] + Octave;
+		public string Letter;
 
-		public int Play(float volume = 0.25f)
-		{
-			return Form1.SoundPlayer.Play(Letter, volume);
-		}
+		//public int Play(float volume = 0.25f)
+		//{
+		//return Form1.SoundPlayer.Play(Letter, volume);
+		//}
 
-		public static Note FromNote(string note, int octave)
+		public static Note Parse(string note, int octave)
 		{
 			note = note.ToUpper();
 
@@ -61,27 +56,22 @@ namespace TabPlayer
 				var index = Array.IndexOf(Notes, note[0].ToString()) + off;
 				var value = index < 0 ? Notes.Length - Math.Abs(index) % Notes.Length : index % Notes.Length;
 
+				octave = index < 0 ? octave - 1 : octave;
+
 				return new Note
 				{
 					Value = value,
-					Octave = index < 0 ? octave - 1 : octave
+					Octave = octave,
+					Letter = $"{Notes[value]}{octave}"
 				};
 			}
 
 			return new Note
 			{
 				Value = Array.IndexOf(Notes, note),
-				Octave = octave
+				Octave = octave,
+				Letter = $"{note}{octave}"
 			};
-		}
-
-		static Note()
-		{
-			var files = Directory.GetFiles("assets/sounds");
-			foreach (var file in files)
-			{
-				Form1.SoundPlayer.Cache(Path.GetFileNameWithoutExtension(file), "ogg");
-			}
 		}
 	}
 }

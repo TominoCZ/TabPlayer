@@ -106,5 +106,17 @@ E |--0-----0---------------------0---4-----4-------2---------------|
                 this["Time"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int Instrument {
+            get {
+                return ((int)(this["Instrument"]));
+            }
+            set {
+                this["Instrument"] = value;
+            }
+        }
     }
 }
