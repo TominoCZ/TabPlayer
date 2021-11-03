@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace TabPlayer
 {
 	public class Tab
 	{
-		public static Dictionary<Instrument, Note[]> _standardTuning = new Dictionary<Instrument, Note[]>()
+		/*
+		public static Dictionary<JSONInstrument, Note[]> _standardTuning = new Dictionary<JSONInstrument, Note[]>()
 		{
 			{
 				Instrument.Guitar,
@@ -30,9 +32,9 @@ namespace TabPlayer
 					Note.Parse("E", 1)
 				}
 			}
-		};
+		};*/
 
-		public Instrument Instrument;
+		public JSONInstrument Instrument;
 
 		public string[] Data;
 		public Note[] Tuning;
@@ -183,14 +185,14 @@ namespace TabPlayer
 			Index = newIndex;
 		}
 
-		public static Tab Parse(string[] lines, Instrument instrument)
+		public static Tab Parse(string[] lines, JSONInstrument instrument)
 		{
 			var started = false;
 			var stringsSet = false;
 			var strings = 0;
 			var stringIndex = 0;
 
-			var standardTuning = _standardTuning[instrument];
+			var tuningOrig = instrument.Tuning.Select(n => Note.Parse(n)).ToArray();
 			var tuning = new List<Note>();
 
 			List<string> tab = new List<string>();
@@ -205,13 +207,13 @@ namespace TabPlayer
 
 					var firstPipe = line.IndexOf('|');
 
-					var note = standardTuning[Math.Min(standardTuning.Length - 1, stringIndex)];
+					var note = tuningOrig[Math.Min(tuningOrig.Length - 1, stringIndex)];
 
 					if (firstPipe > -1 && firstPipe <= 2)
 					{
 						if (firstPipe > 0)
 						{
-							note = Note.Parse(line.Substring(0, firstPipe), standardTuning[Math.Min(standardTuning.Length - 1, stringIndex)].Octave);
+							note = Note.Parse(line.Substring(0, firstPipe), tuningOrig[Math.Min(tuningOrig.Length - 1, stringIndex)].Octave);
 						}
 
 						line = line.Substring(firstPipe + 1, line.Length - firstPipe - 1);

@@ -1,36 +1,16 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
 using TabPlayer.Properties;
 
 namespace TabPlayer
 {
-	public enum Instrument
-	{
-		Guitar,
-		Bass
-	}
-	/*
-	public class Instrument
-	{
-		public string ID;
-		public string[] Tuning;
-	}
-
-	public class JSONInstruments
-	{
-
-	}*/
-
 	public partial class Form1 : Form
 	{
 		public static Form1 Instance;
@@ -54,10 +34,7 @@ namespace TabPlayer
 
 		public Form1()
 		{
-			BassManager.Reload();
-
 			Instance = this;
-			NoteManager = new NoteManager();
 
 			InitializeComponent();
 		}
@@ -66,22 +43,13 @@ namespace TabPlayer
 		{
 			Settings.Default.Reload();
 
+			BassManager.Reload();
+
+			LoadInstruments();
+
 			Application.Idle += (o, _) => Tick();
 
-			var items = (Instrument[])Enum.GetValues(typeof(Instrument));
-			foreach (var item in items)
-			{
-				cbInstrument.Items.Add(item);
-			}
-
-			var ins = Settings.Default.Instrument;
-			if (ins < 0 || ins >= cbInstrument.Items.Count)
-				ins = 0;
-
-			cbInstrument.SelectedIndex = ins;
-
 			rtbTab.Text = Settings.Default.Tab;
-
 			Size = Settings.Default.Size;
 
 			SetTab();
@@ -95,8 +63,79 @@ namespace TabPlayer
 			chbRepeat.Checked = Settings.Default.Repeat;
 			chbPauseOnEdit.Checked = Settings.Default.PauseOnEdit;
 			tbarSpeed.Value = Math.Max(tbarSpeed.Minimum, Math.Min(tbarSpeed.Maximum, Settings.Default.Speed));
+			tbarSpeed_ValueChanged(null, null);
 
 			_loaded = true;
+		}
+
+		private void LoadInstruments()
+		{
+			var config = "instruments.json";
+
+			var loaded = new JSONInstrument[] { };
+
+			try
+			{
+				var json = File.ReadAllText(config);
+				loaded = JsonConvert.DeserializeObject<JSONInstrument[]>(json);
+
+				foreach (var instrument in loaded)
+				{
+					cbInstrument.Items.Add(instrument);
+				}
+			}
+			catch
+			{
+				loaded = new JSONInstrument[]
+				{
+					new JSONInstrument
+					{
+						ID = "guitar",
+						Name = "Guitar",
+						Tuning = new[]{ "E4", "B3", "G3", "D3", "A2", "E2" }
+					},
+					new JSONInstrument
+					{
+						ID = "guitar_nylon",
+						Name = "Nylon Guitar",
+						Tuning = new[]{ "E4", "B3", "G3", "D3", "A2", "E2" }
+					},
+					new JSONInstrument
+					{
+						ID = "guitar_nylon",
+						Name = "Ukulele",
+						Tuning = new[]{ "A4", "E4", "C4", "G4" }
+					},
+					new JSONInstrument
+					{
+						ID = "bass",
+						Name = "Bass",
+						Tuning = new[]{ "G2", "D2", "A1", "E1" }
+					}
+				};
+
+				cbInstrument.Items.AddRange(loaded);
+
+				var json = JsonConvert.SerializeObject(loaded, Formatting.Indented);
+
+				try
+				{
+					File.WriteAllText(config, json);
+				}
+				catch
+				{
+
+				}
+			}
+
+			NoteManager = new NoteManager(loaded);
+
+			var ins = Settings.Default.Instrument;
+			if (ins < 0 || ins >= cbInstrument.Items.Count)
+				ins = 0;
+
+			if (loaded.Length > 0)
+				cbInstrument.SelectedIndex = ins;
 		}
 
 		private void Tick()
@@ -183,7 +222,10 @@ namespace TabPlayer
 
 		private Tab SetTab()
 		{
-			var tab = Tab.Parse(rtbTab.Text.Split('\n'), (Instrument)cbInstrument.Items[cbInstrument.SelectedIndex]);
+			if (cbInstrument.Items.Count == 0)
+				return null;
+
+			var tab = Tab.Parse(rtbTab.Text.Split('\n'), (JSONInstrument)cbInstrument.Items[cbInstrument.SelectedIndex]);
 
 			tab.RingingStrings = _tab?.RingingStrings ?? tab.RingingStrings;
 			tab.Index = _tab?.Index ?? tab.Index;
@@ -280,6 +322,7 @@ namespace TabPlayer
 			var dps = _dashPerSecond * tbarSpeed.Value / 100.0;
 
 			lblSpeed.Text = $"Speed: {tbarSpeed.Value}% ({dps:F1} dashes/s)";
+			//lblSpeed.Text = $"Speed: {dps:F1} dashes/s ({tbarSpeed.Value}%)";
 
 			SaveSettings();
 		}

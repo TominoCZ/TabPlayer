@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -22,12 +23,12 @@ namespace TabPlayer
 			}
 		}
 
-		private static Dictionary<string, Buffer> _soundData = new Dictionary<string, Buffer>();
+		private Dictionary<string, Buffer> _soundData = new Dictionary<string, Buffer>();
 
-		static NoteManager()
+		public NoteManager(JSONInstrument[] loaded)
 		{
 			/*
-			var dict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("notes_bass.json"));
+			var dict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("notes_nylon.json"));
 			foreach (var pair in dict)
 			{
 				var letter = pair.Key;
@@ -36,29 +37,24 @@ namespace TabPlayer
 
 				//var note = Note.Parse(letter.Substring(0, letter.Length - 1), int.Parse(letter.Substring(letter.Length - 1)));
 
-				File.WriteAllBytes("assets/sounds/bass/" + letter + ".ogg", Convert.FromBase64String(data));
+				File.WriteAllBytes("assets/sounds/guitar_nylon/" + letter + ".ogg", Convert.FromBase64String(data));
 			}*/
-			var dirs = Directory.GetDirectories(Path.Combine("assets", "sounds"));
 
-			foreach (var dir in dirs)
+			foreach (var instrument in loaded)
 			{
-				var info = new DirectoryInfo(dir);
-				var type = info.Name.ToLower();
-
+				var dir = Path.Combine("assets", "sounds", instrument.ID);
 				var files = Directory.GetFiles(dir);
 
 				foreach (var file in files)
 				{
 					try
 					{
-						var letter = Path.GetFileNameWithoutExtension(file).ToUpper();
-						var note = Note.Parse(letter.Substring(0, letter.Length - 1), int.Parse(letter.Substring(letter.Length - 1)));
+						var letter = Path.GetFileNameWithoutExtension(file);//.ToUpper(); //var note = Note.Parse(letter.Substring(0, letter.Length - 1), int.Parse(letter.Substring(letter.Length - 1)));
+						var note = Note.Parse(letter);
 
 						letter = note.Letter;
 
-						var id = $"{letter}_{type}";
-
-						Cache(id, file);
+						Cache($"{letter}_{instrument.ID}", file);
 					}
 					catch (Exception e)
 					{
@@ -75,7 +71,7 @@ namespace TabPlayer
 			}*/
 		}
 
-		private static void Cache(string id, string file)
+		private void Cache(string id, string file)
 		{
 			_soundData.Remove(id);
 
@@ -87,16 +83,16 @@ namespace TabPlayer
 			_soundData.Add(id, new Buffer(ptr, data.LongLength));
 		}
 
-		public int Play(ref Note note, Instrument instrument)
+		public int Play(ref Note note, JSONInstrument instrument)
 		{
-			var key = $"{note.Letter}_{instrument.ToString().ToLower()}";
+			var key = $"{note.Letter}_{instrument.ID}";
 
 			if (_soundData.TryGetValue(key, out var buffer))
 			{
 				var stream = Bass.BASS_StreamCreateFile(buffer.Ptr, 0, buffer.Length, BASSFlag.BASS_STREAM_DECODE | BASSFlag.BASS_FX_FREESOURCE);
 				var fxs = BassFx.BASS_FX_TempoCreate(stream, BASSFlag.BASS_STREAM_AUTOFREE | BASSFlag.BASS_FX_FREESOURCE | BASSFlag.BASS_MUSIC_AUTOFREE);
 
-				Bass.BASS_ChannelSetAttribute(fxs, BASSAttribute.BASS_ATTRIB_VOL, 0.25f);
+				Bass.BASS_ChannelSetAttribute(fxs, BASSAttribute.BASS_ATTRIB_VOL, 0.35f);
 				Bass.BASS_ChannelPlay(fxs, false);
 
 				return fxs;
@@ -105,7 +101,7 @@ namespace TabPlayer
 			return -1;
 		}
 
-		public static void Dispose()
+		public void Dispose()
 		{
 			foreach (var buffer in _soundData.Values)
 			{

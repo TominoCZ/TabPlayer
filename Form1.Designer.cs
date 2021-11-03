@@ -278,7 +278,7 @@ namespace TabPlayer
 			this.MinimumSize = new System.Drawing.Size(494, 448);
 			this.Name = "Form1";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-			this.Text = "Tab Player v1.2 [Made by TominoCZ]";
+			this.Text = "Tab Player v1.3 [Made by TominoCZ]";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
 			this.Load += new System.EventHandler(this.Form1_Load);
 			this.ResizeEnd += new System.EventHandler(this.Form1_ResizeEnd);

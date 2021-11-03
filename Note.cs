@@ -45,6 +45,27 @@ namespace TabPlayer
 		//return Form1.SoundPlayer.Play(Letter, volume);
 		//}
 
+		public static Note Parse(string note)
+		{
+			var letter = note.ToUpper();
+
+			var octaveString = "";
+			for (int i = note.Length - 1; i >= 0; i--)
+			{
+				var c = note[i];
+
+				if (!int.TryParse(c.ToString(), out var num))
+					break;
+
+				octaveString += c;
+			}
+
+			var o = int.Parse(octaveString);
+			var n = letter.Substring(0, letter.Length - 1);
+
+			return Parse(n, o);
+		}
+
 		public static Note Parse(string note, int octave)
 		{
 			note = note.ToUpper();
