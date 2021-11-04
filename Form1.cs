@@ -47,7 +47,9 @@ namespace TabPlayer
 
 			LoadInstruments();
 
-			Application.Idle += (o, _) => Tick();
+			Application.Idle += (o, _) => Update();
+			rtbTab.AllowDrop = true;
+			rtbTab.DragDrop += rtbTab_DragDrop;
 
 			rtbTab.Text = Settings.Default.Tab;
 			Size = Settings.Default.Size;
@@ -57,10 +59,12 @@ namespace TabPlayer
 			if (_tab is Tab tab)
 			{
 				tab.Time = Math.Min(tab.Length, Settings.Default.Time);
-				tab.Update(-1);
+				tab.Update(true);
 			}
 
+			chbAutoMute.Checked = Settings.Default.AutoMute;
 			chbRepeat.Checked = Settings.Default.Repeat;
+			chbMerge.Checked = Settings.Default.Merge;
 			chbPauseOnEdit.Checked = Settings.Default.PauseOnEdit;
 			tbarSpeed.Value = Math.Max(tbarSpeed.Minimum, Math.Min(tbarSpeed.Maximum, Settings.Default.Speed));
 			tbarSpeed_ValueChanged(null, null);
@@ -138,25 +142,9 @@ namespace TabPlayer
 				cbInstrument.SelectedIndex = ins;
 		}
 
-		private void Tick()
+		private void Update(bool skipStep = false)
 		{
-			var now = DateTime.Now;
-
-			double delta = 0;
-
-			if (_last != DateTime.MinValue)
-			{
-				delta = (now - _last).TotalSeconds;
-			}
-
-			_last = now;
-
-			Update(delta * _dashPerSecond * tbarSpeed.Value / 100);
-		}
-
-		private void Update(double delta = 0)
-		{
-			if (delta < 0)
+			if (skipStep)
 				return;
 
 			var captureInput = _tab != null && !btnPlayPause.Focused && ActiveControl != rtbTab && ContainsFocus;
@@ -192,32 +180,35 @@ namespace TabPlayer
 				var time = _mouseDownTime + offset;
 
 				_tab.Time = Math.Max(Math.Min(_tab.Length, time), 0);
-
-				_tab.Update(-1);
+				_tab.Update(true);
 			}
 			else
 			{
-				_tab?.Update(delta);
+				_tab?.Update();
 			}
 
-			var progress = 0f;
+			var progress = 0.0;
 
 			if (_tab != null)
 			{
-				progress = (float)Math.Min(1, _tab.Time / (float)_tab.Length);
+				progress = Math.Max(0, _tab.Time - 0.5) / _tab.Length;
 
 				btnPlayPause.Text = !_tab.Playing || _tab.Paused ? "PLAY" : "PAUSE";
+
+				lblTab.Tick();
 			}
 
 			lblTab.Location = new Point((int)(pTab.Size.Width / 2.0 - progress * _tabWidth - _tabOffset + 1), 0);
 
-			pProgress.Size = new Size((int)(pTab.Size.Width * progress), pProgress.Size.Height);
+			pProgress.Size = new Size((int)(pTab.Size.Width * _tab.Progress), pProgress.Size.Height);
 
-			pCenter.Size = new Size((int)1, pTab.Size.Height);
+			pCenter.Size = new Size(1, pTab.Size.Height);
 			pCenter.Location = new Point((int)(pTab.Size.Width / 2f - pCenter.Size.Width / 2f), 0);
 
-			lblTab.Invalidate();
-			pCenter.Invalidate();
+			var rect = pTab.ClientRectangle;
+			rect.Offset(-lblTab.Location.X, 0);
+
+			lblTab.Invalidate(rect);
 		}
 
 		private Tab SetTab()
@@ -225,17 +216,27 @@ namespace TabPlayer
 			if (cbInstrument.Items.Count == 0)
 				return null;
 
-			var tab = Tab.Parse(rtbTab.Text.Split('\n'), (JSONInstrument)cbInstrument.Items[cbInstrument.SelectedIndex]);
+			var tab = Tab.Parse(rtbTab.Text.Split('\n'), chbMerge.Checked, (JSONInstrument)cbInstrument.Items[cbInstrument.SelectedIndex]);
 
+			tab.OnPluck += OnPluck;
+			tab.DashPerScond = _tab?.DashPerScond ?? _dashPerSecond * tbarSpeed.Value / 100.0;
 			tab.RingingStrings = _tab?.RingingStrings ?? tab.RingingStrings;
 			tab.Index = _tab?.Index ?? tab.Index;
 			tab.Time = _tab?.Time ?? tab.Time;
 			tab.Playing = _tab?.Playing ?? tab.Playing;
 			tab.Paused = _tab?.Paused ?? tab.Paused;
 			tab.Repeat = chbRepeat.Checked;
+			tab.AutoMute = chbAutoMute.Checked;
+
+			var skips = tab.CountSkips();
+			var skipsLast = _tab?.CountSkips() ?? skips;
+
+			var diff = skips - skipsLast;
+
+			tab.Index += diff;
+			tab.Time += diff;
 
 			var content = string.Join("\n", tab.Data).Trim();
-
 			if (content.Length == 0)
 			{
 				return null;
@@ -243,15 +244,23 @@ namespace TabPlayer
 
 			lblTab.Text = content;
 
-			var height = pTab.Size.Height;
-			var line = height / (float)tab.Data.Length / 1.2f;
-
-			lblTab.Font = new Font(lblTab.Font.FontFamily, line, FontStyle.Regular, GraphicsUnit.Pixel);
-			lblTab.AutoSize = true;
-
 			var width = lblTab.ClientSize.Width;
+			var height = pTab.Size.Height;
 
-			lblTab.AutoSize = false;
+			var line = height / (float)tab.Data.Length / 1.2f;
+			var font = new Font(lblTab.Font.FontFamily, line, FontStyle.Regular, GraphicsUnit.Pixel);
+
+			using (var bmp = new Bitmap(1, 1))
+			{
+				using (var g = Graphics.FromImage(bmp))
+				{
+					var size = TextRenderer.MeasureText(g, content, font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.TextBoxControl);
+
+					width = size.Width;
+				}
+			}
+
+			lblTab.Font = font;
 			lblTab.Size = new Size(width, height);
 
 			var scale = lblTab.Font.Size / 16.80556;
@@ -279,12 +288,55 @@ namespace TabPlayer
 			Settings.Default.Time = _tab?.Time ?? 0;
 			Settings.Default.Repeat = chbRepeat.Checked;
 			Settings.Default.PauseOnEdit = chbPauseOnEdit.Checked;
+			Settings.Default.AutoMute = chbAutoMute.Checked;
+			Settings.Default.Merge = chbMerge.Checked;
 			Settings.Default.Speed = tbarSpeed.Value;
 			Settings.Default.Size = Size;
 
 			Settings.Default.Instrument = cbInstrument.SelectedIndex;
 
 			Settings.Default.Save();
+		}
+
+		private void OnPluck(object _, StringEventArgs e)
+		{
+			lblTab.Pluck(e.String, e.Mute);
+		}
+
+		private void rtbTab_DragDrop(object o, DragEventArgs e)
+		{
+			if (e.Data.GetDataPresent(DataFormats.FileDrop))
+			{
+				var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+				var file = files[0];
+
+				if (File.Exists(file))
+				{
+					try
+					{
+						rtbTab.Text = File.ReadAllText(file);
+
+						var old = _tab;
+						var tab = SetTab();
+
+						if (tab != null)
+						{
+							if (_tab != null && _tab.Playing)
+							{
+								tab.Play();
+							}
+							else
+							{
+								tab.Stop();
+							}
+						}
+					}
+					catch
+					{
+
+					}
+				}
+			}
 		}
 
 		private void rtbTab_TextChanged(object sender, EventArgs e)
@@ -294,7 +346,9 @@ namespace TabPlayer
 			if (tab != null)
 			{
 				if (chbPauseOnEdit.Checked)
+				{
 					tab.Pause();
+				}
 			}
 
 			SaveSettings();
@@ -317,9 +371,31 @@ namespace TabPlayer
 			SaveSettings();
 		}
 
+		private void chbAutoMute_CheckedChanged(object sender, EventArgs e)
+		{
+			if (_tab != null)
+				_tab.AutoMute = chbAutoMute.Checked;
+
+			ActiveControl = lblTab;
+
+			SaveSettings();
+		}
+
+		private void chbMerge_CheckedChanged(object sender, EventArgs e)
+		{
+			SetTab();
+
+			ActiveControl = lblTab;
+
+			SaveSettings();
+		}
+
 		private void tbarSpeed_ValueChanged(object sender, EventArgs e)
 		{
 			var dps = _dashPerSecond * tbarSpeed.Value / 100.0;
+
+			if (_tab != null)
+				_tab.DashPerScond = dps;
 
 			lblSpeed.Text = $"Speed: {tbarSpeed.Value}% ({dps:F1} dashes/s)";
 			//lblSpeed.Text = $"Speed: {dps:F1} dashes/s ({tbarSpeed.Value}%)";
@@ -395,7 +471,7 @@ namespace TabPlayer
 		{
 			if ((DateTime.Now - _last).TotalMilliseconds >= 16)
 			{
-				Tick();
+				Update();
 			}
 		}
 
@@ -415,6 +491,11 @@ namespace TabPlayer
 			BassManager.Dispose();
 
 			SaveSettings();
+		}
+
+		private void LoseTextBoxFocus(object sender, System.Windows.Forms.MouseEventArgs e)
+		{
+			ActiveControl = lblTab;
 		}
 	}
 }

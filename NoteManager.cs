@@ -90,7 +90,7 @@ namespace TabPlayer
 			if (_soundData.TryGetValue(key, out var buffer))
 			{
 				var stream = Bass.BASS_StreamCreateFile(buffer.Ptr, 0, buffer.Length, BASSFlag.BASS_STREAM_DECODE | BASSFlag.BASS_FX_FREESOURCE);
-				var fxs = BassFx.BASS_FX_TempoCreate(stream, BASSFlag.BASS_STREAM_AUTOFREE | BASSFlag.BASS_FX_FREESOURCE | BASSFlag.BASS_MUSIC_AUTOFREE);
+				var fxs = BassFx.BASS_FX_TempoCreate(stream, BASSFlag.BASS_STREAM_AUTOFREE | BASSFlag.BASS_MUSIC_AUTOFREE | BASSFlag.BASS_FX_FREESOURCE);
 
 				Bass.BASS_ChannelSetAttribute(fxs, BASSAttribute.BASS_ATTRIB_VOL, 0.35f);
 				Bass.BASS_ChannelPlay(fxs, false);

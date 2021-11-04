@@ -5,6 +5,18 @@ using System.Linq;
 
 namespace TabPlayer
 {
+	public class StringEventArgs : EventArgs
+	{
+		public int String;
+		public bool Mute;
+
+		public StringEventArgs(int index, bool mute)
+		{
+			String = index;
+			Mute = mute;
+		}
+	}
+
 	public class Tab
 	{
 		/*
@@ -36,16 +48,25 @@ namespace TabPlayer
 
 		public JSONInstrument Instrument;
 
+		public event EventHandler<StringEventArgs> OnPluck;
+
 		public string[] Data;
 		public Note[] Tuning;
 		public int[] RingingStrings;
 
 		public double Time;
+		public double DashPerScond;
 		public int Index;
 		public int Length;
+		public int Splits;
 		public bool Playing;
 		public bool Paused;
 		public bool Repeat;
+		public bool AutoMute;
+
+		public double Progress;
+
+		private DateTime _last = DateTime.MinValue;
 
 		public void Play()
 		{
@@ -73,6 +94,25 @@ namespace TabPlayer
 			Index = 0;
 			Playing = false;
 			Paused = false;
+
+			foreach (var stream in RingingStrings)
+			{
+				BassManager.Mute(stream);
+			}
+		}
+
+		public int CountSkips(bool whole = false)
+		{
+			var max = whole ? Length - 1 : Math.Min(Length - 1, Index);
+			var count = 0;
+			for (int i = 1; i < max; i++)
+			{
+				if (IsSkip(i))
+				{
+					count++;
+				}
+			}
+			return count;
 		}
 
 		private int[] GetNotes(int index)
@@ -91,7 +131,11 @@ namespace TabPlayer
 				if (char.ToUpper(line[index]) == 'X')
 				{
 					notes[i] = -2;
-				}
+				}/*
+				else if (char.ToUpper(line[index]) == '|')
+				{
+					notes[i] = -3;
+				}*/
 				else if (int.TryParse(line[index].ToString(), out var num))
 				{
 					if (index > 0
@@ -120,17 +164,65 @@ namespace TabPlayer
 			return notes;
 		}
 
-		public void Update(double delta)
+		private bool IsSkip(int index)
 		{
-			if (Playing && delta >= 0)
+			for (int i = 0; i < Data.Length; i++)
+			{
+				var line = Data[i];
+
+				if (index >= line.Length || line[index] != '|')
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		private double GetDelta()
+		{
+			var now = DateTime.Now;
+
+			double delta = 0;
+
+			if (_last != DateTime.MinValue)
+			{
+				delta = (now - _last).TotalSeconds;
+			}
+
+			_last = now;
+
+			return delta;
+		}
+
+		public void Update(bool skipStep = false)
+		{
+			var delta = GetDelta() * DashPerScond;
+
+			if (skipStep)
+			{
+				Time = Math.Min(Length, Math.Max(1, Time));
+			}
+
+			if (Playing && !skipStep)
 			{
 				Time += delta;
 			}
 
-			var newIndex = (int)Math.Min(Length, Math.Floor(Time + 0.5));
-
-			if (delta >= 0)
+			var newIndex = (int)Math.Min(Length, Math.Floor(Time));
+			var skips = 0;
+			for (int i = Index; i <= newIndex; i++)
 			{
+				if (IsSkip(i) && !skipStep)
+				{
+					skips++;
+				}
+			}
+
+			if (!skipStep)
+			{
+				newIndex += skips;
+
 				for (int i = Index; i < newIndex; i++)
 				{
 					var notes = GetNotes(i);
@@ -141,13 +233,16 @@ namespace TabPlayer
 						if (offset > -1)
 						{
 							var note = Tuning[strIndex] + offset;
-
 							var stream = Form1.Instance.NoteManager.Play(ref note, Instrument);
-							//var s = note.Play();
+
+							OnPluck?.Invoke(this, new StringEventArgs(strIndex, false));
 
 							if (strIndex < RingingStrings.Length)
 							{
-								BassManager.Mute(RingingStrings[strIndex]);
+								if (AutoMute)
+								{
+									BassManager.Mute(RingingStrings[strIndex]);
+								}
 
 								RingingStrings[strIndex] = stream;
 							}
@@ -158,21 +253,33 @@ namespace TabPlayer
 							{
 								BassManager.Mute(RingingStrings[strIndex]);
 							}
+
+							OnPluck?.Invoke(this, new StringEventArgs(strIndex, true));
 						}
 					}
 				}
+
+				Time += skips;
 			}
+
+			Index = newIndex;
 
 			var over = Time - Length;
 
-			if (over >= 0 && Playing)
+			if (over >= 0)
 			{
 				if (Repeat)
 				{
-					Index = 0;
-					Time = over;
-
-					return;
+					if (!skipStep && Playing)
+					{
+						Index = 0;
+						Time = over;
+					}
+					else
+					{
+						Time = Length;
+						Index = Length;
+					}
 				}
 				else
 				{
@@ -182,10 +289,10 @@ namespace TabPlayer
 				}
 			}
 
-			Index = newIndex;
+			Progress = Math.Max(0, Time - CountSkips() - 1) / (Length - Splits - 2); // -1 instead of -2 if we want stop to stop progress, -2 is stop to last dash
 		}
 
-		public static Tab Parse(string[] lines, JSONInstrument instrument)
+		public static Tab Parse(string[] lines, bool merge, JSONInstrument instrument)
 		{
 			var started = false;
 			var stringsSet = false;
@@ -216,7 +323,7 @@ namespace TabPlayer
 							note = Note.Parse(line.Substring(0, firstPipe), tuningOrig[Math.Min(tuningOrig.Length - 1, stringIndex)].Octave);
 						}
 
-						line = line.Substring(firstPipe + 1, line.Length - firstPipe - 1);
+						line = line.Substring(firstPipe, line.Length - firstPipe);
 					}
 
 					if (!stringsSet)
@@ -253,11 +360,21 @@ namespace TabPlayer
 
 			for (int i = 0; i < tab.Count; i++)
 			{
-				var line = tab[i];//.Replace("-|-", "");
-								  //line = line.Replace("-|", "-");
-								  //line = line.Replace("|-", "-");
-				line = line.Replace("|", "");
-				//line = "|-" + line + "-|";
+				var line = tab[i];
+
+				if (merge)
+				{
+					line = $"|{line}|";
+
+					line = line.Substring(1, line.Length - 2);
+					line = line.Replace("|", "");
+
+					line = $"|{line}|";
+				}
+				else
+				{
+					line = line.Replace("||", "|");
+				}
 
 				tab[i] = line;
 
@@ -266,7 +383,7 @@ namespace TabPlayer
 				length = Math.Max(length, line.Length);
 			}
 
-			return new Tab()
+			var t = new Tab()
 			{
 				Data = tab.ToArray(),
 				Tuning = tuning.ToArray(),
@@ -274,6 +391,10 @@ namespace TabPlayer
 				Length = length,
 				Instrument = instrument
 			};
+
+			t.Splits = t.CountSkips(true);
+
+			return t;
 		}
 	}
 }
