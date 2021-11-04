@@ -118,5 +118,29 @@ E |--0-----0---------------------0---4-----4-------2---------------|
                 this["Instrument"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoMute {
+            get {
+                return ((bool)(this["AutoMute"]));
+            }
+            set {
+                this["AutoMute"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool Merge {
+            get {
+                return ((bool)(this["Merge"]));
+            }
+            set {
+                this["Merge"] = value;
+            }
+        }
     }
 }
