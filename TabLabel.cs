@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+using System;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TabPlayer
 {
-	public partial class BetterLabel : Label
+	public partial class TabLabel : Label
 	{
 		public Color DashColor { get; set; } = Color.FromArgb(100, 100, 100);
 
@@ -25,16 +20,28 @@ namespace TabPlayer
 			}
 		}
 
+		public Size TabSize;
+
+		private int _frames = 0;
 		private string _text = "";
 		private string _dashes = "";
 		private string _other = "";
 		private double[] _strings = new double[1];
 
-		private DateTime _last = DateTime.MinValue;
+		private DateTime _last = DateTime.Now;
+		private DateTime _lastFPS = DateTime.Now;
 
-		public BetterLabel()
+		private Bitmap _bmp;
+		private Graphics _g;
+
+		public TabLabel()
 		{
 			InitializeComponent();
+
+			_bmp = new Bitmap(1, 1);
+			_g = Graphics.FromImage(_bmp);
+
+			SetupGraphics(_g);
 
 			UpdateText();
 		}
@@ -46,14 +53,23 @@ namespace TabPlayer
 
 		protected override void OnPaint(PaintEventArgs e)
 		{
-			e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
-			e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+			_frames++;
 
-			var size = TextRenderer.MeasureText(e.Graphics, Text, Font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.TextBoxControl);
+			var delta = (DateTime.Now - _lastFPS).TotalSeconds;
+			if (delta >= 1)
+			{
+				Console.WriteLine($"FPS: {(int)(_frames / delta)}");
+
+				_lastFPS = DateTime.Now;
+				_frames = 0;
+			}
+
+			SetupGraphics(e.Graphics);
+
 			var scale = Font.Size / 16.80556;
 			var offset = 5 * (float)scale;
 
-			var height = size.Height;
+			var height = TabSize.Height;
 			var panelSize = Parent.Size;
 
 			var thickness = 5 * 6f / _strings.Length;
@@ -74,7 +90,7 @@ namespace TabPlayer
 					var startX = offsetStart + offset * 1.5f;
 					var endX = startX - end;
 
-					var ss = startX - endX - Math.Max(0, Location.X);
+					var ss = startX - endX;
 
 					e.Graphics.FillRectangle(sb, startX, y - h / 2, ss, h);
 				}
@@ -82,6 +98,13 @@ namespace TabPlayer
 
 			TextRenderer.DrawText(e.Graphics, _dashes, Font, Point.Empty, DashColor, Color.Transparent, TextFormatFlags.TextBoxControl);
 			TextRenderer.DrawText(e.Graphics, _other, Font, Point.Empty, ForeColor, Color.Transparent, TextFormatFlags.TextBoxControl);
+		}
+
+		private void SetupGraphics(Graphics g)
+		{
+			g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+			g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+			g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Low;
 		}
 
 		private double GetDelta()
@@ -122,7 +145,6 @@ namespace TabPlayer
 		{
 			var text = Text;
 			var dashes = "";
-
 			for (int i = 0; i < text.Length; i++)
 			{
 				var c = text[i];
@@ -133,11 +155,21 @@ namespace TabPlayer
 					dashes += " ";
 			}
 			var other = text.Replace("-", " ");
-			var lines = Math.Max(1, text.Split('\n').Length);
+			var lines = Math.Max(1, text.Count(c => c == '\n') + 1);
 
 			_strings = new double[lines];
 			_dashes = dashes;
 			_other = other;
+
+			TabSize = TextRenderer.MeasureText(_g, _text, Font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.TextBoxControl);
+		}
+
+		public new void Dispose()
+		{
+			base.Dispose();
+
+			_g?.Dispose();
+			_bmp?.Dispose();
 		}
 	}
 }

@@ -1,7 +1,7 @@
 ﻿
 namespace TabPlayer
 {
-	partial class BetterLabel
+	partial class TuningLabel
 	{
 		/// <summary> 
 		/// Required designer variable.

@@ -1,51 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace TabPlayer
 {
-	public class StringEventArgs : EventArgs
+	public static class Extensions
 	{
-		public int String;
-		public bool Mute;
-
-		public StringEventArgs(int index, bool mute)
+		public static bool TryParseInt(this char c, out int val)
 		{
-			String = index;
-			Mute = mute;
+			if (c >= 48 && c <= 57)
+			{
+				val = c - 48;
+
+				return true;
+			}
+
+			val = 0;
+
+			return false;
+		}
+
+		public static bool IsNumber(this char c)
+		{
+			return c >= 48 && c <= 57;
+		}
+
+		public static bool IsNumber(this string s)
+		{
+			return int.TryParse(s, out _);
 		}
 	}
 
 	public class Tab
 	{
-		/*
-		public static Dictionary<JSONInstrument, Note[]> _standardTuning = new Dictionary<JSONInstrument, Note[]>()
-		{
-			{
-				Instrument.Guitar,
-				new[]
-				{
-					Note.Parse("E", 4),
-					Note.Parse("B", 3),
-					Note.Parse("G", 3),
-					Note.Parse("D", 3),
-					Note.Parse("A", 2),
-					Note.Parse("E", 2)
-				}
-			},
-			{
-				Instrument.Bass,
-				new[]
-				{
-					Note.Parse("G", 2),
-					Note.Parse("D", 2),
-					Note.Parse("A", 1),
-					Note.Parse("E", 1)
-				}
-			}
-		};*/
-
 		public JSONInstrument Instrument;
 
 		public event EventHandler<StringEventArgs> OnPluck;
@@ -115,10 +103,8 @@ namespace TabPlayer
 			return count;
 		}
 
-		private int[] GetNotes(int index)
+		private void GetNotes(ref int[] notes, int index)
 		{
-			var notes = new int[Data.Length];
-
 			for (int i = 0; i < Data.Length; i++)
 			{
 				var line = Data[i];
@@ -128,55 +114,60 @@ namespace TabPlayer
 				if (index >= line.Length)
 					continue;
 
-				if (char.ToUpper(line[index]) == 'X')
+				var charAtPos = line[index];
+
+				if (char.ToLower(charAtPos) == 'x')
 				{
 					notes[i] = -2;
-				}/*
-				else if (char.ToUpper(line[index]) == '|')
+				}
+				else if (charAtPos.TryParseInt(out var numAtPos))
 				{
-					notes[i] = -3;
-				}*/
-				else if (int.TryParse(line[index].ToString(), out var num))
-				{
-					if (index > 0
-						   && int.TryParse(line[index - 1].ToString(), out _)
-						   && int.TryParse(line[index].ToString(), out _)
-						   && int.TryParse(line[index - 1].ToString() + line[index], out _))
+					if (index > 0 && line[index - 1].IsNumber())
 					{
 						continue;
 					}
-					else if (index < line.Length - 1
-					   && int.TryParse(line[index + 1].ToString(), out _)
-					   && int.TryParse(line[index].ToString(), out _)
-					   && int.TryParse(line[index].ToString() + line[index + 1], out var num1))
+					if (index < line.Length - 1 && line[index + 1].TryParseInt(out var next) && int.TryParse($"{charAtPos}{next}", out var combined))
 					{
-						num = num1;
-					}
-					else if (int.TryParse(line[index].ToString(), out var num2))
-					{
-						num = num2;
+						notes[i] = combined;
+
+						continue;
 					}
 
-					notes[i] = num;
+					notes[i] = numAtPos;
 				}
 			}
-
-			return notes;
 		}
 
 		private bool IsSkip(int index)
 		{
+			var lines = 0;
+			var count = 0;
+
 			for (int i = 0; i < Data.Length; i++)
 			{
 				var line = Data[i];
 
+				/*
 				if (index >= line.Length || line[index] != '|')
 				{
 					return false;
 				}
+				*/
+
+				if (index >= line.Length)
+				{
+					continue;
+				}
+
+				if (line[index] == '|')
+				{
+					count++;
+				}
+
+				lines++;
 			}
 
-			return true;
+			return count >= lines / 2 && count > 0;
 		}
 
 		private double GetDelta()
@@ -209,7 +200,7 @@ namespace TabPlayer
 				Time += delta;
 			}
 
-			var newIndex = (int)Math.Min(Length, Math.Floor(Time));
+			var newIndex = Math.Min(Length, (int)Time);
 			var skips = 0;
 			for (int i = Index; i <= newIndex; i++)
 			{
@@ -223,9 +214,11 @@ namespace TabPlayer
 			{
 				newIndex += skips;
 
+				var notes = new int[Data.Length];
+
 				for (int i = Index; i < newIndex; i++)
 				{
-					var notes = GetNotes(i);
+					GetNotes(ref notes, i);
 
 					for (int strIndex = 0; strIndex < notes.Length; strIndex++)
 					{
@@ -233,7 +226,7 @@ namespace TabPlayer
 						if (offset > -1)
 						{
 							var note = Tuning[strIndex] + offset;
-							var stream = Form1.Instance.NoteManager.Play(ref note, Instrument);
+							var stream = MainForm.Instance.NoteManager.Play(ref note, Instrument);
 
 							OnPluck?.Invoke(this, new StringEventArgs(strIndex, false));
 
@@ -289,11 +282,13 @@ namespace TabPlayer
 				}
 			}
 
-			Progress = Math.Max(0, Time - CountSkips() - 1) / (Length - Splits - 2); // -1 instead of -2 if we want stop to stop progress, -2 is stop to last dash
+			Progress = Math.Min(1, Math.Max(0, Math.Max(0, Time - CountSkips() - 1) / (Length - Splits - 2))); // -1 instead of -2 if we want stop to stop progress, -2 is stop to last dash
 		}
 
-		public static Tab Parse(string[] lines, bool merge, JSONInstrument instrument)
+		public static bool TryParse(string[] lines, bool merge, JSONInstrument instrument, out Tab result)
 		{
+			result = null;
+
 			var started = false;
 			var stringsSet = false;
 			var strings = 0;
@@ -306,21 +301,48 @@ namespace TabPlayer
 
 			for (int i = 0; i < lines.Length; i++)
 			{
-				var line = lines[i].Trim().Replace(" ", "");
+				var line = lines[i].Trim();
 
-				if (line.Contains("-") || line.Contains("|-") || line.Contains("-|") || line.Contains("-|-"))
+				var tabEnd = line.LastIndexOf("-|");
+				if (tabEnd > 0)
+				{
+					line = line.Substring(0, tabEnd + 2);
+				}
+
+				line = line.Replace(" ", "");
+
+				if (line.Contains("-") || line.Contains("|"))
 				{
 					started = true;
 
 					var firstPipe = line.IndexOf('|');
-
 					var note = tuningOrig[Math.Min(tuningOrig.Length - 1, stringIndex)];
 
-					if (firstPipe > -1 && firstPipe <= 2)
+					if (firstPipe > -1)
 					{
+						var whole = line.Substring(0, firstPipe);
+
 						if (firstPipe > 0)
 						{
-							note = Note.Parse(line.Substring(0, firstPipe), tuningOrig[Math.Min(tuningOrig.Length - 1, stringIndex)].Octave);
+							var letterEnd = firstPipe;
+
+							var firstDash = line.IndexOf('-');
+							if (firstDash > 0)
+								letterEnd = Math.Min(letterEnd, firstDash);
+
+							whole = line.Substring(0, letterEnd);
+
+							if (Note.IsNote(whole))
+							{
+								if (Note.GetOctave(whole, out _))
+									note = Note.Parse(whole);
+								else
+									note = Note.Parse(whole, tuningOrig[Math.Min(tuningOrig.Length - 1, stringIndex)].Octave);
+							}
+							else
+							{
+								note = tuningOrig[Math.Min(tuningOrig.Length - 1, stringIndex)];
+							}
 						}
 
 						line = line.Substring(firstPipe, line.Length - firstPipe);
@@ -362,28 +384,42 @@ namespace TabPlayer
 			{
 				var line = tab[i];
 
+				if (line.LastOrDefault() != '|')
+				{
+					var lastPipe = line.LastIndexOf('|');
+
+					line = line.Substring(0, lastPipe + 1);
+				}
+
+				line = $"|{line}|";
+
 				if (merge)
 				{
-					line = $"|{line}|";
-
 					line = line.Substring(1, line.Length - 2);
 					line = line.Replace("|", "");
-
 					line = $"|{line}|";
 				}
-				else
+
+				line = Regex.Replace(line, @"(\|)+", "|");
+
+				var tabEnd = line.LastIndexOf("-|");
+				if (tabEnd > 0)
 				{
-					line = line.Replace("||", "|");
+					line = line.Substring(0, tabEnd + 2);
 				}
 
 				tab[i] = line;
-
 				ringing[i] = -1;
 
 				length = Math.Max(length, line.Length);
 			}
 
-			var t = new Tab()
+			if (length <= 2)
+			{
+				return false;
+			}
+
+			result = new Tab()
 			{
 				Data = tab.ToArray(),
 				Tuning = tuning.ToArray(),
@@ -392,9 +428,9 @@ namespace TabPlayer
 				Instrument = instrument
 			};
 
-			t.Splits = t.CountSkips(true);
+			result.Splits = result.CountSkips(true);
 
-			return t;
+			return true;
 		}
 	}
 }

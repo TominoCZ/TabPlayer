@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -8,22 +7,9 @@ using Un4seen.Bass.AddOn.Fx;
 
 namespace TabPlayer
 {
-	public class NoteManager
+	public partial class NoteManager
 	{
-		struct Buffer
-		{
-			public IntPtr Ptr;
-
-			public long Length;
-
-			public Buffer(IntPtr ptr, long length)
-			{
-				Ptr = ptr;
-				Length = length;
-			}
-		}
-
-		private Dictionary<string, Buffer> _soundData = new Dictionary<string, Buffer>();
+		private Dictionary<string, BufferPtr> _soundData = new Dictionary<string, BufferPtr>();
 
 		public NoteManager(JSONInstrument[] loaded)
 		{
@@ -49,7 +35,7 @@ namespace TabPlayer
 				{
 					try
 					{
-						var letter = Path.GetFileNameWithoutExtension(file);//.ToUpper(); //var note = Note.Parse(letter.Substring(0, letter.Length - 1), int.Parse(letter.Substring(letter.Length - 1)));
+						var letter = Path.GetFileNameWithoutExtension(file);
 						var note = Note.Parse(letter);
 
 						letter = note.Letter;
@@ -62,13 +48,6 @@ namespace TabPlayer
 					}
 				}
 			}
-
-			/*
-			var files = Directory.GetFiles("assets/sounds");
-			foreach (var file in files)
-			{
-				Form1.SoundPlayer.Cache(Path.GetFileNameWithoutExtension(file), "ogg");
-			}*/
 		}
 
 		private void Cache(string id, string file)
@@ -80,7 +59,7 @@ namespace TabPlayer
 
 			Marshal.Copy(data, 0, ptr, data.Length);
 
-			_soundData.Add(id, new Buffer(ptr, data.LongLength));
+			_soundData.Add(id, new BufferPtr(ptr, data.LongLength));
 		}
 
 		public int Play(ref Note note, JSONInstrument instrument)

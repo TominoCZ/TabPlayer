@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace TabPlayer
 {
@@ -8,23 +7,17 @@ namespace TabPlayer
 		public static Note operator +(Note n, int offset)
 		{
 			var newVal = n.Value + offset;
-			var octaves = (int)Math.Floor(newVal / 12.0);
+			var octaves = newVal / 12;
 
-			var value = newVal % 12;
+			var value = newVal < 12 ? newVal : newVal % 12;
 			var octave = n.Octave + octaves;
 			var note = Notes[value];
 
-			return new Note
-			{
-				Value = value,
-				Octave = octave,
-				Letter = $"{note}{octave}"
-			};
-		}
+			n.Value = value;
+			n.Octave = octave;
+			n.Letter = $"{note}{octave}";
 
-		public static Note operator -(Note n, int offset)
-		{
-			return n + -offset;
+			return n;
 		}
 
 		public static string[] Notes = new[]
@@ -37,31 +30,48 @@ namespace TabPlayer
 
 		public int Value;
 		public int Octave;
-
 		public string Letter;
 
-		//public int Play(float volume = 0.25f)
-		//{
-		//return Form1.SoundPlayer.Play(Letter, volume);
-		//}
-
-		public static Note Parse(string note)
+		public static bool IsNote(string note)
 		{
-			var letter = note.ToUpper();
+			note = note.ToUpper();
 
-			var octaveString = "";
+			return note.Length > 0 && (note[0] == 'H' || Array.IndexOf(Notes, $"{note[0]}") > -1);
+		}
+
+		public static bool GetOctave(string note, out int octave)
+		{
+			var combined = "";
 			for (int i = note.Length - 1; i >= 0; i--)
 			{
 				var c = note[i];
 
-				if (!int.TryParse(c.ToString(), out var num))
+				if (!c.IsNumber())
 					break;
 
-				octaveString += c;
+				combined = c + combined;
 			}
 
-			var o = int.Parse(octaveString);
-			var n = letter.Substring(0, letter.Length - 1);
+			return int.TryParse(combined, out octave);
+		}
+
+		public static Note Parse(string note)
+		{
+			var whole = note.ToUpper();
+			var n = whole.Substring(0, whole.Length - 1);
+			if (n.Length >= 2)
+			{
+				if (n[1] == 'B' || n[1] == '#')
+				{
+					n = n.Substring(0, 2);
+				}
+				else
+				{
+					n = $"{n[0]}";
+				}
+			}
+
+			GetOctave(whole, out var o);
 
 			return Parse(n, o);
 		}
@@ -70,20 +80,46 @@ namespace TabPlayer
 		{
 			note = note.ToUpper();
 
-			if (note.Length == 2)
+			if (note.Length >= 2 && (note[1] == 'B' || note[1] == '#'))
+			{
+				note = note.Substring(0, 2);
+			}
+			else
+			{
+				note = $"{note[0]}";
+			}
+
+			var origNote = note;
+			if (origNote[0] == 'H')
+			{
+				var str = "B";
+				if (note.Length >= 2)
+				{
+					str += note[1];
+				}
+				note = str;
+			}
+
+			if (note.Length >= 2)
 			{
 				var off = note[1] == 'B' ? -1 : (note[1] == '#' ? 1 : 0);
-
-				var index = Array.IndexOf(Notes, note[0].ToString()) + off;
+				var index = Array.IndexOf(Notes, $"{note[0]}") + off;
 				var value = index < 0 ? Notes.Length - Math.Abs(index) % Notes.Length : index % Notes.Length;
 
 				octave = index < 0 ? octave - 1 : octave;
 
-				return new Note
+				note = Notes[value];
+
+				if (origNote == "H")
+				{
+					note = "H";
+				}
+
+				return new Note()
 				{
 					Value = value,
 					Octave = octave,
-					Letter = $"{Notes[value]}{octave}"
+					Letter = $"{note}{octave}"
 				};
 			}
 
@@ -91,7 +127,7 @@ namespace TabPlayer
 			{
 				Value = Array.IndexOf(Notes, note),
 				Octave = octave,
-				Letter = $"{note}{octave}"
+				Letter = $"{(origNote == "H" ? origNote : note)}{octave}"
 			};
 		}
 	}
