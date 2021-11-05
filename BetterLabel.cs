@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TabPlayer
@@ -25,6 +20,8 @@ namespace TabPlayer
 			}
 		}
 
+		public Size TabSize;
+
 		private string _text = "";
 		private string _dashes = "";
 		private string _other = "";
@@ -32,8 +29,14 @@ namespace TabPlayer
 
 		private DateTime _last = DateTime.MinValue;
 
+		private Bitmap _bmp;
+		private Graphics _g;
+
 		public BetterLabel()
 		{
+			_bmp = new Bitmap(1, 1);
+			_g = Graphics.FromImage(_bmp);
+
 			InitializeComponent();
 
 			UpdateText();
@@ -46,14 +49,14 @@ namespace TabPlayer
 
 		protected override void OnPaint(PaintEventArgs e)
 		{
-			e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+			e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
 			e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+			e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Low;
 
-			var size = TextRenderer.MeasureText(e.Graphics, Text, Font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.TextBoxControl);
 			var scale = Font.Size / 16.80556;
 			var offset = 5 * (float)scale;
 
-			var height = size.Height;
+			var height = TabSize.Height;
 			var panelSize = Parent.Size;
 
 			var thickness = 5 * 6f / _strings.Length;
@@ -122,7 +125,6 @@ namespace TabPlayer
 		{
 			var text = Text;
 			var dashes = "";
-
 			for (int i = 0; i < text.Length; i++)
 			{
 				var c = text[i];
@@ -133,11 +135,21 @@ namespace TabPlayer
 					dashes += " ";
 			}
 			var other = text.Replace("-", " ");
-			var lines = Math.Max(1, text.Split('\n').Length);
+			var lines = Math.Max(1, text.Count(c => c == '\n') + 1);
 
 			_strings = new double[lines];
 			_dashes = dashes;
 			_other = other;
+
+			TabSize = TextRenderer.MeasureText(_g, _text, Font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.TextBoxControl);
+		}
+
+		public new void Dispose()
+		{
+			base.Dispose();
+
+			_g.Dispose();
+			_bmp.Dispose();
 		}
 	}
 }

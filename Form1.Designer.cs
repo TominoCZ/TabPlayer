@@ -47,6 +47,7 @@ namespace TabPlayer
 			this.chbAutoMute = new System.Windows.Forms.CheckBox();
 			this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
 			this.chbMerge = new System.Windows.Forms.CheckBox();
+			this.lblTuning = new TabPlayer.TuningLabel();
 			this.lblTab = new TabPlayer.BetterLabel();
 			((System.ComponentModel.ISupportInitialize)(this.tbarSpeed)).BeginInit();
 			this.pContainer.SuspendLayout();
@@ -184,6 +185,7 @@ namespace TabPlayer
 			this.pTab.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.pTab.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
+			this.pTab.Controls.Add(this.lblTuning);
 			this.pTab.Controls.Add(this.pCenter);
 			this.pTab.Controls.Add(this.lblTab);
 			this.pTab.Location = new System.Drawing.Point(0, 185);
@@ -292,12 +294,20 @@ namespace TabPlayer
 			this.chbMerge.UseVisualStyleBackColor = true;
 			this.chbMerge.CheckedChanged += new System.EventHandler(this.chbMerge_CheckedChanged);
 			// 
+			// lblTuning
+			// 
+			this.lblTuning.Location = new System.Drawing.Point(1, -1);
+			this.lblTuning.Name = "lblTuning";
+			this.lblTuning.Size = new System.Drawing.Size(144, 34);
+			this.lblTuning.TabIndex = 8;
+			// 
 			// lblTab
 			// 
 			this.lblTab.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
+			this.lblTab.DashColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
 			this.lblTab.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
 			this.lblTab.ForeColor = System.Drawing.SystemColors.Menu;
-			this.lblTab.Location = new System.Drawing.Point(1, 0);
+			this.lblTab.Location = new System.Drawing.Point(1, -1);
 			this.lblTab.Name = "lblTab";
 			this.lblTab.Size = new System.Drawing.Size(536, 33);
 			this.lblTab.TabIndex = 7;
@@ -327,7 +337,7 @@ namespace TabPlayer
 			this.MinimumSize = new System.Drawing.Size(553, 448);
 			this.Name = "Form1";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-			this.Text = "Tab Player v1.4 [Made by TominoCZ]";
+			this.Text = "Tab Player v1.5 [Made by TominoCZ]";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
 			this.Load += new System.EventHandler(this.Form1_Load);
 			this.ResizeEnd += new System.EventHandler(this.Form1_ResizeEnd);
@@ -360,6 +370,7 @@ namespace TabPlayer
 		private System.Windows.Forms.Panel pCenter;
 		private System.Windows.Forms.Panel pTab;
 		private BetterLabel lblTab;
+		private TuningLabel lblTuning;
 	}
 }
 

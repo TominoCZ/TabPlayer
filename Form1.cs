@@ -1,10 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Input;
 using TabPlayer.Properties;
@@ -41,13 +39,14 @@ namespace TabPlayer
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
+			Application.Idle += OnIdle;
+
 			Settings.Default.Reload();
 
 			BassManager.Reload();
 
 			LoadInstruments();
 
-			Application.Idle += (o, _) => Update();
 			rtbTab.AllowDrop = true;
 			rtbTab.DragDrop += rtbTab_DragDrop;
 
@@ -70,6 +69,13 @@ namespace TabPlayer
 			tbarSpeed_ValueChanged(null, null);
 
 			_loaded = true;
+		}
+
+		private void OnIdle(object sender, EventArgs e)
+		{
+			_last = DateTime.Now;
+
+			UpdateTab();
 		}
 
 		private void LoadInstruments()
@@ -142,7 +148,7 @@ namespace TabPlayer
 				cbInstrument.SelectedIndex = ins;
 		}
 
-		private void Update(bool skipStep = false)
+		private void UpdateTab(bool skipStep = false)
 		{
 			if (skipStep)
 				return;
@@ -151,17 +157,28 @@ namespace TabPlayer
 
 			if (captureInput && (Keyboard.IsKeyDown(Key.R) || Keyboard.IsKeyDown(Key.S)))
 			{
-				_tab.Stop();
+				_tab?.Stop();
 			}
 
-			if (captureInput && Keyboard.IsKeyDown(Key.Space))
+			if (captureInput && Keyboard.IsKeyDown(Key.Space) && _tab != null)
 			{
-				if (!_spaceDown)
+				if (!_spaceDown && _tab != null)
 				{
 					if (_tab.Playing)
-						_tab?.Pause();
+					{
+						_tab.Pause();
+					}
 					else
-						_tab?.Resume();
+					{
+						if (_tab.Time == _tab.Length)
+						{
+							_tab.Play();
+						}
+						else
+						{
+							_tab.Resume();
+						}
+					}
 				}
 
 				_spaceDown = true;
@@ -171,7 +188,7 @@ namespace TabPlayer
 				_spaceDown = false;
 			}
 
-			if (_mouseDown)
+			if (_mouseDown && _tab != null)
 			{
 				var mouse = PointToClient(System.Windows.Forms.Cursor.Position);
 				var drag = _mouseDownPoint.X - mouse.X;
@@ -199,8 +216,9 @@ namespace TabPlayer
 			}
 
 			lblTab.Location = new Point((int)(pTab.Size.Width / 2.0 - progress * _tabWidth - _tabOffset + 1), 0);
+			lblTuning.Location = new Point((int)(lblTab.Location.X - lblTuning.ClientSize.Width + _tabOffset * 1.45), lblTab.Location.Y);
 
-			pProgress.Size = new Size((int)(pTab.Size.Width * _tab.Progress), pProgress.Size.Height);
+			pProgress.Size = new Size((int)(pTab.Size.Width * (_tab?.Progress ?? 0)), pProgress.Size.Height);
 
 			pCenter.Size = new Size(1, pTab.Size.Height);
 			pCenter.Location = new Point((int)(pTab.Size.Width / 2f - pCenter.Size.Width / 2f), 0);
@@ -211,12 +229,13 @@ namespace TabPlayer
 			lblTab.Invalidate(rect);
 		}
 
-		private Tab SetTab()
+		private Tab SetTab(bool adjustForStops = false)
 		{
 			if (cbInstrument.Items.Count == 0)
 				return null;
 
-			var tab = Tab.Parse(rtbTab.Text.Split('\n'), chbMerge.Checked, (JSONInstrument)cbInstrument.Items[cbInstrument.SelectedIndex]);
+			if (!Tab.TryParse(rtbTab.Text.Split('\n'), chbMerge.Checked, (JSONInstrument)cbInstrument.Items[cbInstrument.SelectedIndex], out var tab))
+				return null;
 
 			tab.OnPluck += OnPluck;
 			tab.DashPerScond = _tab?.DashPerScond ?? _dashPerSecond * tbarSpeed.Value / 100.0;
@@ -228,13 +247,16 @@ namespace TabPlayer
 			tab.Repeat = chbRepeat.Checked;
 			tab.AutoMute = chbAutoMute.Checked;
 
-			var skips = tab.CountSkips();
-			var skipsLast = _tab?.CountSkips() ?? skips;
+			if (adjustForStops)
+			{
+				var skips = tab.CountSkips();
+				var skipsLast = _tab?.CountSkips() ?? skips;
 
-			var diff = skips - skipsLast;
+				var diff = skips - skipsLast;
 
-			tab.Index += diff;
-			tab.Time += diff;
+				tab.Index += diff;
+				tab.Time += diff;
+			}
 
 			var content = string.Join("\n", tab.Data).Trim();
 			if (content.Length == 0)
@@ -243,6 +265,7 @@ namespace TabPlayer
 			}
 
 			lblTab.Text = content;
+			lblTuning.Text = string.Join("\n", tab.Tuning.Select(n => n.Letter));
 
 			var width = lblTab.ClientSize.Width;
 			var height = pTab.Size.Height;
@@ -250,18 +273,28 @@ namespace TabPlayer
 			var line = height / (float)tab.Data.Length / 1.2f;
 			var font = new Font(lblTab.Font.FontFamily, line, FontStyle.Regular, GraphicsUnit.Pixel);
 
+			var tuningWidth = 1;
+
 			using (var bmp = new Bitmap(1, 1))
 			{
 				using (var g = Graphics.FromImage(bmp))
 				{
 					var size = TextRenderer.MeasureText(g, content, font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.TextBoxControl);
-
 					width = size.Width;
+
+					size = TextRenderer.MeasureText(g, lblTuning.Text, font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.TextBoxControl);
+					tuningWidth = size.Width;
 				}
 			}
 
 			lblTab.Font = font;
 			lblTab.Size = new Size(width, height);
+
+			lblTuning.Font = lblTab.Font;
+			lblTuning.Size = new Size(tuningWidth, height);
+
+			lblTuning.BackColor = lblTab.BackColor;
+			lblTuning.ForeColor = lblTab.ForeColor;
 
 			var scale = lblTab.Font.Size / 16.80556;
 			var offset = 5 * scale;
@@ -271,7 +304,7 @@ namespace TabPlayer
 			_tabWidth = lblTab.Size.Width - offset * 2;
 			_tab = tab;
 
-			Update();
+			UpdateTab();
 
 			Settings.Default.Tab = rtbTab.Text;
 
@@ -383,7 +416,7 @@ namespace TabPlayer
 
 		private void chbMerge_CheckedChanged(object sender, EventArgs e)
 		{
-			SetTab();
+			SetTab(true);
 
 			ActiveControl = lblTab;
 
@@ -398,7 +431,6 @@ namespace TabPlayer
 				_tab.DashPerScond = dps;
 
 			lblSpeed.Text = $"Speed: {tbarSpeed.Value}% ({dps:F1} dashes/s)";
-			//lblSpeed.Text = $"Speed: {dps:F1} dashes/s ({tbarSpeed.Value}%)";
 
 			SaveSettings();
 		}
@@ -471,13 +503,13 @@ namespace TabPlayer
 		{
 			if ((DateTime.Now - _last).TotalMilliseconds >= 16)
 			{
-				Update();
+				OnIdle(null, null);
 			}
 		}
 
 		private void Form1_Resize(object sender, EventArgs e)
 		{
-			Update();
+			UpdateTab();
 		}
 
 		private void Form1_ResizeEnd(object sender, EventArgs e)
@@ -489,6 +521,10 @@ namespace TabPlayer
 		{
 			NoteManager.Dispose();
 			BassManager.Dispose();
+
+			lblTab.Dispose();
+
+			Application.Idle -= OnIdle;
 
 			SaveSettings();
 		}
