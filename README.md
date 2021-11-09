@@ -12,7 +12,7 @@ Here's a list of handy features my little creation supports:
 
 The program plays the tab with the standard tuning of the selected instrument unless you override the tuning in the tab itself per string (check gif and yes, both notes 'B' and 'H' work)
 
-The program is primarily made to play Guitar tabs or tabs for any other string instrument but in theory you can always have it play any instrument you like if you add it in.
+The program was primarily made to play Guitar tabs or tabs for any other string instrument but in theory you can always have it play any instrument you like if you add it in.
 
 ***I've included some tabs you can test it with in the TABS folder.***
 
