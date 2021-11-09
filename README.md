@@ -10,7 +10,7 @@ Here's a list of handy features my little creation supports:
 - Unlimited amount of strings (lines)
 - Much more
 
-The program plays the tab with the standard tuning of the selected instrument unless you override the tuning in the tab itself per string (check gif)
+The program plays the tab with the standard tuning of the selected instrument unless you override the tuning in the tab itself per string (check gif and yes, both notes 'B' and 'H' work)
 
 ***I've included some tabs you can test it with in the TABS folder.***
 
