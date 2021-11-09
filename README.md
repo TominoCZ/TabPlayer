@@ -1,4 +1,4 @@
-You just paste the tab into the window and play it.
+You just paste the tab or drag the tab file into the window and play it.
 
 The program can read the 'x' legend (a mute).
 
