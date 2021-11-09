@@ -1,5 +1,17 @@
-You just paste the tab or drag the tab file into the window and play it.
+# Tab Player
 
-The program can read the 'x' legend (a mute).
+***I couldn't find any good free solution that is convenient enough so I built my own.***
 
-I've included some tabs you can test it with in the TABS folder.
+Here's a list of handy features my little creation supports:
+
+- Live editing
+- Custom instruments **(in intruments.json)**
+- Custom note octaves in the tab itself (such as E4, G#2, ...)
+- Unlimited amount of strings (lines)
+- Much more
+
+The program plays the tab with the standard tuning of the selected instrument unless you override the tuning in the tab itself per string (check gif)
+
+***I've included some tabs you can test it with in the TABS folder.***
+
+![tab player 5](https://user-images.githubusercontent.com/24359011/140895226-f4cc3d5b-ab45-421e-b29b-293681e6818c.gif)
