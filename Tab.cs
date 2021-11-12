@@ -299,9 +299,9 @@ namespace TabPlayer
 
 			List<string> tab = new List<string>();
 
-			for (int i = 0; i < lines.Length; i++)
+			foreach (var t in lines)
 			{
-				var line = lines[i].Trim();
+				var line = t.Trim();
 
 				var tabEnd = line.LastIndexOf("-|");
 				if (tabEnd > 0)
@@ -399,13 +399,13 @@ namespace TabPlayer
 					line = line.Replace("|", "");
 					line = $"|{line}|";
 				}
-
+				
 				line = Regex.Replace(line, @"(\|)+", "|");
 
-				var tabEnd = line.LastIndexOf("-|");
+				var tabEnd = line.LastIndexOf('|');
 				if (tabEnd > 0)
 				{
-					line = line.Substring(0, tabEnd + 2);
+					line = line.Substring(0, tabEnd + 1);
 				}
 
 				tab[i] = line;
