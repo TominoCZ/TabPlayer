@@ -2,7 +2,7 @@
 
 ***I couldn't find any good free solution that is convenient enough so I built my own.***
 
-Here's a list of handy features my little creation supports:
+Here's a list of handy features my little creation provides:
 
 - Live editing
 - Custom instruments **(in intruments.json)**
