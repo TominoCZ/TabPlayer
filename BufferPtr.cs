@@ -2,19 +2,16 @@
 
 namespace TabPlayer
 {
-	public partial class NoteManager
+	public struct BufferPtr
 	{
-		struct BufferPtr
+		public IntPtr Ptr;
+
+		public long Length;
+
+		public BufferPtr(IntPtr ptr, long length)
 		{
-			public IntPtr Ptr;
-
-			public long Length;
-
-			public BufferPtr(IntPtr ptr, long length)
-			{
-				Ptr = ptr;
-				Length = length;
-			}
+			Ptr = ptr;
+			Length = length;
 		}
 	}
 }
