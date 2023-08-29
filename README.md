@@ -6,8 +6,8 @@ Here's a list of handy features my little creation provides:
 
 - Live editing
 - Custom instruments **(in intruments.json)**
-- Custom note octaves in the tab itself (such as E4, G#2, ...)
-- Unlimited amount of strings (lines)
+- Custom tab tunings are supported (including octave numbers) (such as E4, G#2, ...)
+- Unlimited amount of strings (one per line)
 - Much more
 
 The program plays the tab with the standard tuning of the selected instrument unless you override the tuning in the tab itself per string (check gif and yes, both notes 'B' and 'H' work)
